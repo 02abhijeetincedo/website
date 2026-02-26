@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAMGE — Rules Authentication & Module Generation Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #050d1a;
+    --dark: #0a1628;
+    --card: #0d1f38;
+    --card2: #0f2540;
+    --blue: #1e6fff;
+    --cyan: #00d4ff;
+    --gold: #f5b942;
+    --green: #00e5a0;
+    --red: #ff4757;
+    --text: #e8f0ff;
+    --muted: #7b9cc4;
+    --border: rgba(0,212,255,0.12);
+    --glow: rgba(30,111,255,0.25);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--navy); color: var(--text); font-family: 'DM Mono', monospace; overflow-x: hidden; }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 10% 20%, rgba(30,111,255,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 90% 80%, rgba(0,212,255,0.05) 0%, transparent 60%),
+      repeating-linear-gradient(0deg, transparent, transparent 79px, rgba(0,212,255,0.03) 80px),
+      repeating-linear-gradient(90deg, transparent, transparent 79px, rgba(0,212,255,0.03) 80px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 48px;
+    background: rgba(5,13,26,0.85); backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo { display: flex; align-items: center; gap: 12px; }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--blue), var(--cyan));
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 800; color: white; font-family: 'Syne', sans-serif;
+    box-shadow: 0 0 20px rgba(0,212,255,0.3);
+  }
+  .logo-text {
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 18px; letter-spacing: 0.05em;
+    background: linear-gradient(90deg, var(--text), var(--cyan));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .nav-links { display: flex; gap: 28px; list-style: none; }
+  .nav-links a { color: var(--muted); text-decoration: none; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--cyan); }
+  .nav-cta { background: linear-gradient(135deg, var(--blue), var(--cyan)); color: white !important; padding: 9px 22px; border-radius: 6px; -webkit-text-fill-color: white !important; }
+  section { position: relative; z-index: 1; }
+
+  /* HERO */
+  #hero { min-height: 100vh; display: flex; align-items: center; justify-content: center; text-align: center; padding: 120px 48px 80px; flex-direction: column; }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.3);
+    border-radius: 100px; padding: 8px 20px; font-size: 12px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--cyan); margin-bottom: 32px;
+    animation: fadeInDown 0.8s ease both;
+  }
+  .hero-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 8px var(--cyan); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .hero-title { font-family: 'Syne', sans-serif; font-size: clamp(40px, 7vw, 84px); font-weight: 800; line-height: 1.0; letter-spacing: -0.02em; margin-bottom: 24px; animation: fadeInDown 0.8s 0.1s ease both; }
+  .hero-title .accent { display: block; background: linear-gradient(135deg, var(--blue) 0%, var(--cyan) 50%, var(--gold) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .hero-subtitle { font-size: 17px; color: var(--muted); max-width: 600px; line-height: 1.7; margin-bottom: 48px; animation: fadeInDown 0.8s 0.2s ease both; }
+  .hero-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; animation: fadeInDown 0.8s 0.3s ease both; }
+  .btn-primary { background: linear-gradient(135deg, var(--blue), var(--cyan)); color: white; padding: 16px 36px; border-radius: 8px; text-decoration: none; font-weight: 500; font-size: 14px; letter-spacing: 0.05em; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 8px 32px rgba(30,111,255,0.35); }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(30,111,255,0.5); }
+  .btn-ghost { background: transparent; color: var(--text); padding: 16px 36px; border-radius: 8px; text-decoration: none; font-weight: 500; font-size: 14px; letter-spacing: 0.05em; border: 1px solid var(--border); transition: border-color 0.2s, background 0.2s; }
+  .btn-ghost:hover { border-color: var(--cyan); background: rgba(0,212,255,0.05); }
+  .hero-metrics { display: flex; gap: 48px; margin-top: 80px; padding-top: 48px; border-top: 1px solid var(--border); animation: fadeInDown 0.8s 0.4s ease both; flex-wrap: wrap; justify-content: center; }
+  .metric { text-align: center; }
+  .metric-num { font-family: 'Syne', sans-serif; font-size: 34px; font-weight: 800; background: linear-gradient(135deg, var(--cyan), var(--blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .metric-label { font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 4px; }
+  @keyframes fadeInDown { from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:translateY(0)} }
+
+  /* SHARED */
+  .section-header { text-align: center; margin-bottom: 64px; }
+  .section-tag { display: inline-block; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--cyan); margin-bottom: 16px; padding: 6px 16px; border: 1px solid rgba(0,212,255,0.2); border-radius: 100px; }
+  .section-title { font-family: 'Syne', sans-serif; font-size: clamp(26px, 4vw, 46px); font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; }
+  .section-title em { font-family: 'Instrument Serif', serif; font-style: italic; color: var(--gold); }
+  .section-desc { color: var(--muted); font-size: 15px; max-width: 540px; margin: 14px auto 0; line-height: 1.7; }
+
+  /* WORKFLOW */
+  #workflow { padding: 100px 48px; max-width: 1400px; margin: 0 auto; }
+  .steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+  .step-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 28px; position: relative; overflow: hidden; transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s; }
+  .step-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--blue), var(--cyan)); opacity: 0; transition: opacity 0.3s; }
+  .step-card:hover { transform: translateY(-4px); border-color: rgba(0,212,255,0.25); box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+  .step-card:hover::before { opacity: 1; }
+  .step-number { font-family: 'Syne', sans-serif; font-size: 11px; letter-spacing: 0.15em; color: var(--cyan); text-transform: uppercase; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+  .step-number::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .step-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 16px; }
+  .step-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+  .step-desc { color: var(--muted); font-size: 13px; line-height: 1.75; }
+  .step-screen { margin-top: 20px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); background: var(--dark); padding: 14px; }
+  .screen-topbar { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot-r{background:#ff5f57} .dot-y{background:#febc2e} .dot-g{background:#28c840}
+  .screen-row { height: 7px; border-radius: 4px; background: rgba(255,255,255,0.06); margin-bottom: 7px; }
+  .screen-row.hi { background: rgba(0,212,255,0.15); }
+  .screen-table { display: grid; grid-template-columns: repeat(4,1fr); gap: 4px; margin-top: 6px; }
+  .sc { height: 18px; border-radius: 3px; background: rgba(255,255,255,0.04); }
+  .sc.g{background:rgba(0,229,160,0.2)} .sc.r{background:rgba(255,71,87,0.2)} .sc.b{background:rgba(30,111,255,0.2)}
+  .output-tag { display: inline-flex; align-items: center; gap: 6px; margin-top: 16px; padding: 5px 12px; border-radius: 100px; background: rgba(0,229,160,0.08); border: 1px solid rgba(0,229,160,0.2); font-size: 11px; color: var(--green); letter-spacing: 0.06em; }
+  .output-tag::before { content: '→'; }
+
+  /* FEATURES */
+  #features { padding: 100px 48px; background: linear-gradient(180deg,transparent,rgba(30,111,255,0.04),transparent); }
+  .features-inner { max-width: 1200px; margin: 0 auto; }
+  .features-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 2px; background: var(--border); border-radius: 20px; overflow: hidden; border: 1px solid var(--border); }
+  .feat-card { background: var(--card); padding: 36px 28px; transition: background 0.3s; }
+  .feat-card:hover { background: var(--card2); }
+  .feat-icon { font-size: 26px; margin-bottom: 16px; display: block; }
+  .feat-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 9px; }
+  .feat-desc { color: var(--muted); font-size: 13px; line-height: 1.7; }
+
+  /* MAPPING */
+  #mapping { padding: 100px 48px; max-width: 1200px; margin: 0 auto; }
+  .mapping-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; margin-top: 64px; }
+  .mapping-visual { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 28px; }
+  .layer-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--dark); border-radius: 10px; margin-bottom: 10px; border: 1px solid var(--border); gap: 12px; }
+  .layer-name { font-size: 12px; color: var(--text); font-weight: 500; min-width: 130px; }
+  .layer-bar-wrap { flex: 1; height: 5px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+  .layer-bar { height: 100%; border-radius: 3px; }
+  .layer-val { font-size: 12px; color: var(--cyan); font-weight: 500; min-width: 36px; text-align: right; }
+  .confidence-badge { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; background: rgba(0,229,160,0.1); border: 1px solid rgba(0,229,160,0.25); border-radius: 10px; margin-top: 18px; font-size: 13px; color: var(--green); }
+  .mapping-content h3 { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 700; margin-bottom: 14px; line-height: 1.3; }
+  .mapping-content p { color: var(--muted); font-size: 13px; line-height: 1.8; margin-bottom: 20px; }
+  .check-list { list-style: none; display: flex; flex-direction: column; gap: 11px; }
+  .check-list li { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .check-list li::before { content: '✓'; color: var(--cyan); font-weight: 700; flex-shrink: 0; }
+
+  /* RULE HUB */
+  #rulehub { padding: 100px 48px; background: linear-gradient(180deg,transparent,rgba(0,212,255,0.03),transparent); }
+  .rulehub-inner { max-width: 1200px; margin: 0 auto; }
+  .modules-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-top: 56px; }
+  .module-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 22px; position: relative; overflow: hidden; transition: transform 0.3s, box-shadow 0.3s; }
+  .module-card:hover { transform: translateY(-3px); box-shadow: 0 16px 40px rgba(0,0,0,0.3); }
+  .module-confidence { position: absolute; top: 14px; right: 14px; font-size: 11px; color: var(--green); background: rgba(0,229,160,0.1); padding: 3px 9px; border-radius: 100px; border: 1px solid rgba(0,229,160,0.2); }
+  .module-icon { font-size: 22px; margin-bottom: 10px; }
+  .module-name { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--cyan); margin-bottom: 7px; font-weight: 500; }
+  .module-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .code-block { background: #010810; border: 1px solid var(--border); border-radius: 14px; padding: 26px; margin-top: 44px; overflow: hidden; position: relative; }
+  .code-block::before { content: 'Python Validation Module'; position: absolute; top: 14px; right: 18px; font-size: 11px; color: var(--muted); letter-spacing: 0.1em; }
+  .code-topbar { display: flex; gap: 8px; margin-bottom: 18px; }
+  .code-block pre { font-family: 'DM Mono', monospace; font-size: 13px; line-height: 1.8; overflow-x: auto; }
+  .kw{color:#c792ea} .fn{color:#82aaff} .str{color:#c3e88d} .cm{color:#546e7a;font-style:italic} .num{color:#f78c6c} .cls{color:#ffcb6b}
+
+  /* RESULTS */
+  #results { padding: 100px 48px; max-width: 1200px; margin: 0 auto; }
+  .results-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 56px; }
+  .summary-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+  .sum-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 22px; text-align: center; }
+  .sum-num { font-family: 'Syne', sans-serif; font-size: 30px; font-weight: 800; }
+  .sum-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px; }
+  .rule-table { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+  .rule-table-header { display: grid; grid-template-columns: 56px 1fr 80px 76px; gap: 10px; padding: 12px 18px; background: rgba(0,0,0,0.3); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); border-bottom: 1px solid var(--border); }
+  .rule-row { display: grid; grid-template-columns: 56px 1fr 80px 76px; gap: 10px; padding: 13px 18px; border-bottom: 1px solid var(--border); font-size: 12px; align-items: center; transition: background 0.2s; }
+  .rule-row:last-child { border-bottom: none; }
+  .rule-row:hover { background: rgba(255,255,255,0.02); }
+  .status-badge { padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 600; letter-spacing: 0.07em; }
+  .status-pass { background: rgba(0,229,160,0.1); color: var(--green); border: 1px solid rgba(0,229,160,0.2); }
+  .status-fail { background: rgba(255,71,87,0.1); color: var(--red); border: 1px solid rgba(255,71,87,0.2); }
+  .donut-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 28px; display: flex; flex-direction: column; align-items: center; }
+  .donut-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 600; margin-bottom: 20px; }
+  .donut-legend { display: flex; gap: 20px; margin-top: 20px; }
+  .legend-item { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted); }
+  .legend-dot { width: 9px; height: 9px; border-radius: 50%; }
+
+  /* VIDEO */
+  #video { padding: 100px 48px; background: linear-gradient(180deg,transparent,rgba(30,111,255,0.05),transparent); }
+  .video-inner { max-width: 1050px; margin: 0 auto; }
+  .video-main { background: var(--card); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; margin-top: 52px; }
+  .video-embed-area { position: relative; padding-bottom: 56.25%; height: 0; background: #010810; }
+  .video-embed-area iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+  .video-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, #010810, #0d1f38); }
+  .play-btn { width: 76px; height: 76px; border-radius: 50%; background: linear-gradient(135deg, var(--blue), var(--cyan)); display: flex; align-items: center; justify-content: center; font-size: 26px; box-shadow: 0 0 60px rgba(30,111,255,0.5); transition: transform 0.3s, box-shadow 0.3s; cursor: pointer; border: none; color: white; margin-bottom: 18px; }
+  .play-btn:hover { transform: scale(1.1); box-shadow: 0 0 80px rgba(30,111,255,0.7); }
+  .video-info { padding: 24px 28px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border); }
+  .video-meta h4 { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; margin-bottom: 3px; }
+  .video-meta p { font-size: 12px; color: var(--muted); }
+  .video-duration { background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.2); padding: 7px 18px; border-radius: 8px; font-size: 12px; color: var(--cyan); }
+  .chapters-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 28px; }
+  .chapter-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px 22px; display: flex; align-items: center; gap: 14px; cursor: pointer; transition: border-color 0.2s, transform 0.2s; }
+  .chapter-card:hover { border-color: rgba(0,212,255,0.3); transform: translateX(4px); }
+  .chapter-num { width: 38px; height: 38px; border-radius: 9px; background: linear-gradient(135deg, var(--blue), var(--cyan)); display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 13px; flex-shrink: 0; }
+  .chapter-info h5 { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .chapter-info p { font-size: 11px; color: var(--muted); }
+  .video-upload-box { background: var(--card); border: 2px dashed rgba(0,212,255,0.2); border-radius: 16px; padding: 44px; text-align: center; margin-top: 28px; transition: border-color 0.3s, background 0.3s; cursor: pointer; }
+  .video-upload-box:hover { border-color: rgba(0,212,255,0.4); background: rgba(0,212,255,0.03); }
+  .upload-icon { font-size: 44px; margin-bottom: 14px; display: block; }
+  .video-upload-box h4 { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; margin-bottom: 7px; }
+  .video-upload-box p { color: var(--muted); font-size: 13px; margin-bottom: 22px; }
+  .video-url-form { display: flex; gap: 10px; max-width: 480px; margin: 0 auto; }
+  .video-url-input { flex: 1; background: var(--dark); border: 1px solid var(--border); border-radius: 8px; padding: 11px 15px; color: var(--text); font-family: 'DM Mono', monospace; font-size: 13px; outline: none; transition: border-color 0.2s; }
+  .video-url-input:focus { border-color: var(--cyan); }
+  .video-url-input::placeholder { color: var(--muted); }
+  .embed-btn { background: linear-gradient(135deg, var(--blue), var(--cyan)); color: white; border: none; padding: 11px 22px; border-radius: 8px; cursor: pointer; font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; white-space: nowrap; transition: opacity 0.2s; }
+  .embed-btn:hover { opacity: 0.85; }
+
+  /* DEMO */
+  #demo { padding: 100px 48px; max-width: 1000px; margin: 0 auto; }
+  .tips-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 56px; }
+  .tip-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 28px; }
+  .tip-num { font-family: 'Syne', sans-serif; font-size: 44px; font-weight: 800; color: rgba(0,212,255,0.08); margin-bottom: 10px; line-height: 1; }
+  .tip-card h4 { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 9px; color: var(--gold); }
+  .tip-card p { color: var(--muted); font-size: 13px; line-height: 1.75; }
+  .tip-card ul { list-style: none; margin-top: 10px; display: flex; flex-direction: column; gap: 7px; }
+  .tip-card ul li { color: var(--muted); font-size: 12px; line-height: 1.6; padding-left: 14px; position: relative; }
+  .tip-card ul li::before { content: '▸'; position: absolute; left: 0; color: var(--cyan); }
+  .script-box { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 36px; margin-top: 28px; }
+  .script-box h3 { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+  .script-step { display: flex; gap: 18px; padding: 18px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
+  .script-step:last-child { border-bottom: none; }
+  .script-marker { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, var(--blue), var(--cyan)); display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .script-content h5 { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 600; margin-bottom: 5px; }
+  .script-content p { color: var(--muted); font-size: 13px; line-height: 1.7; font-style: italic; }
+
+  footer { border-top: 1px solid var(--border); padding: 44px; text-align: center; color: var(--muted); font-size: 13px; position: relative; z-index: 1; }
+  footer strong { color: var(--text); font-family: 'Syne', sans-serif; }
+  ::-webkit-scrollbar{width:5px} ::-webkit-scrollbar-track{background:var(--navy)} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+  .fade-in { opacity: 0; transform: translateY(22px); transition: opacity 0.6s ease, transform 0.6s ease; }
+  .fade-in.visible { opacity: 1; transform: translateY(0); }
+  @media(max-width:900px){
+    nav{padding:14px 20px} .nav-links{display:none}
+    #hero,#workflow,#features,#mapping,#rulehub,#results,#video,#demo{padding-left:20px;padding-right:20px}
+    .mapping-layout,.results-layout{grid-template-columns:1fr}
+    .features-grid{grid-template-columns:1fr 1fr}
+    .tips-grid{grid-template-columns:1fr}
+  }
+  @media(max-width:600px){.features-grid{grid-template-columns:1fr}.hero-metrics{gap:20px}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">
+    <div class="logo-icon">R</div>
+    <span class="logo-text">RAMGE</span>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#workflow">Workflow</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#rulehub">Rule Hub</a></li>
+    <li><a href="#results">Results</a></li>
+    <li><a href="#video">Tutorial</a></li>
+    <li><a href="#demo" class="nav-cta">Demo Guide</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-badge">AI-Powered · Enterprise Data Quality</div>
+  <h1 class="hero-title">
+    Rules Authentication &<br>
+    <span class="accent">Module Generation Engine</span>
+  </h1>
+  <p class="hero-subtitle">The TPM DQ Engine — a unified platform to validate, map, and enforce data quality rules across enterprise pipelines using generative AI.</p>
+  <div class="hero-buttons">
+    <a href="#workflow" class="btn-primary">▶ Explore Workflow</a>
+    <a href="#video" class="btn-ghost">🎬 Watch Tutorial</a>
+  </div>
+  <div class="hero-metrics">
+    <div class="metric"><div class="metric-num">9</div><div class="metric-label">Pipeline Steps</div></div>
+    <div class="metric"><div class="metric-num">1.00</div><div class="metric-label">AI Confidence</div></div>
+    <div class="metric"><div class="metric-num">296+</div><div class="metric-label">Checks per Run</div></div>
+    <div class="metric"><div class="metric-num">3-Layer</div><div class="metric-label">AI Mapping</div></div>
+    <div class="metric"><div class="metric-num">Real-Time</div><div class="metric-label">Monitoring</div></div>
+  </div>
+</section>
+
+<!-- WORKFLOW -->
+<section id="workflow">
+  <div class="section-header fade-in">
+    <div class="section-tag">End-to-End Workflow</div>
+    <h2 class="section-title">From Upload to <em>Validation</em></h2>
+    <p class="section-desc">A complete 9-step guided pipeline from raw data to certified data quality results.</p>
+  </div>
+  <div class="steps-grid">
+    <div class="step-card fade-in">
+      <div class="step-number">Step 01</div>
+      <div class="step-icon" style="background:rgba(30,111,255,0.15)">📊</div>
+      <div class="step-title">Dashboard — Command Center</div>
+      <div class="step-desc">Real-time snapshot of pipeline performance. Monitor Full Pipeline Runs, Individual Steps, Avg Duration, and Active Users from one unified view with complete audit trail.</div>
+      <div class="step-screen">
+        <div class="screen-topbar"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+        <div class="screen-row hi" style="width:70%"></div>
+        <div class="screen-row" style="width:100%"></div>
+        <div class="screen-row" style="width:85%"></div>
+        <div class="screen-table"><div class="sc b"></div><div class="sc"></div><div class="sc"></div><div class="sc g"></div><div class="sc"></div><div class="sc b"></div><div class="sc g"></div><div class="sc"></div><div class="sc g"></div><div class="sc"></div><div class="sc b"></div><div class="sc"></div></div>
+      </div>
+      <div class="output-tag">Live Metrics · Execution History · Rule Audit Logs</div>
+    </div>
+    <div class="step-card fade-in">
+      <div class="step-number">Step 02</div>
+      <div class="step-icon" style="background:rgba(0,212,255,0.12)">📁</div>
+      <div class="step-title">File Upload — Ingest Rules & Data</div>
+      <div class="step-desc">Upload your Excel Rules Workbook (.xlsx) defining all DQ rules. Select Schema Configurations and upload corresponding datasets (CSV, XLSX, XLS, JSON) for each schema.</div>
+      <div class="step-screen">
+        <div class="screen-topbar"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+        <div style="background:rgba(0,212,255,0.08);border:1px dashed rgba(0,212,255,0.3);border-radius:6px;padding:10px;text-align:center;font-size:10px;color:var(--cyan);margin-bottom:8px;">☁ DQ Rules Workbook — Drag & Drop</div>
+        <div class="screen-row" style="width:100%;background:rgba(0,229,160,0.15)"></div>
+        <div class="screen-row" style="width:60%"></div>
+      </div>
+      <div class="output-tag">Parsed Rules Table · Schema-Dataset Pairs</div>
+    </div>
+    <div class="step-card fade-in">
+      <div class="step-number">Step 03</div>
+      <div class="step-icon" style="background:rgba(245,185,66,0.12)">🧠</div>
+      <div class="step-title">Schema Mapping — AI Column Matching</div>
+      <div class="step-desc">3-layer AI engine maps dataset columns to schema fields using Fuzzy Matching (0.20), Embedding Similarity (0.30), and LLM Reasoning (0.50). Auto-approve threshold: 0.75.</div>
+      <div class="step-screen">
+        <div class="screen-topbar"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px"><div style="flex:0 0 75px;font-size:10px;color:var(--muted)">Fuzzy</div><div style="flex:1;height:4px;background:rgba(255,255,255,0.06);border-radius:2px"><div style="width:20%;height:100%;background:var(--blue);border-radius:2px"></div></div><div style="font-size:10px;color:var(--cyan);margin-left:5px">0.20</div></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px"><div style="flex:0 0 75px;font-size:10px;color:var(--muted)">Embedding</div><div style="flex:1;height:4px;background:rgba(255,255,255,0.06);border-radius:2px"><div style="width:30%;height:100%;background:var(--cyan);border-radius:2px"></div></div><div style="font-size:10px;color:var(--cyan);margin-left:5px">0.30</div></div>
+        <div style="display:flex;align-items:center;gap:8px"><div style="flex:0 0 75px;font-size:10px;color:var(--muted)">LLM Reason</div><div style="flex:1;height:4px;background:rgba(255,255,255,0.06);border-radius:2px"><div style="width:50%;height:100%;background:var(--gold);border-radius:2px"></div></div><div style="font-size:10px;color:var(--cyan);margin-left:5px">0.50</div></div>
+      </div>
+      <div class="output-tag">39/40 Columns Auto-Approved · Confidence 1.00</div>
+    </div>
+    <div class="step-card fade-in">
+      <div class="step-number">Step 04</div>
+      <div class="step-icon" style="background:rgba(0,229,160,0.12)">⚙️</div>
+      <div class="step-title">Rule Transformation — Structured Rules</div>
+      <div class="step-desc">Converts plain-language DQ rules into structured machine-readable definitions with Rule ID, Check Type, DQ Category, Stage (Silver/Golden), Fields, Tables, and Action (Reject/Warn/Report).</div>
+      <div class="step-screen">
+        <div class="screen-topbar"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+        <div class="screen-table" style="grid-template-columns:repeat(5,1fr)">
+          <div class="sc b"></div><div class="sc b"></div><div class="sc b"></div><div class="sc b"></div><div class="sc b"></div>
+          <div class="sc"></div><div class="sc"></div><div class="sc g"></div><div class="sc"></div><div class="sc"></div>
+          <div class="sc"></div><div class="sc g"></div><div class="sc"></div><div class="sc"></div><div class="sc"></div>
+          <div class="sc"></div><div class="sc"></div><div class="sc"></div><div class="sc g"></div><div class="sc"></div>
+          <div class="sc"></div><div class="sc"></div><div class="sc g"></div><div class="sc"></div><div class="sc"></div>
+        </div>
+      </div>
+      <div class="output-tag">5 Structured DQ Rules Extracted</div>
+    </div>
+    <div class="step-card fade-in">
+      <div class="step-number">Step 05</div>
+      <div class="step-icon" style="background:rgba(199,146,234,0.12)">🐍</div>
+      <div class="step-title">Rule Hub — Python Validation Modules</div>
+      <div class="step-desc">AI generates production-ready Python functions: check_data_length, check_data_type, check_not_null, check_null_volume_variance, and check_schema — each with Confidence 1.00. Fully expandable source code.</div>
+      <div class="step-screen">
+        <div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);line-height:1.6">
+          <div style="color:var(--cyan)">def</div>
+          <div><span style="color:#82aaff">check_data_type</span>(df, fields, params):</div>
+          <div style="padding-left:12px;color:#c3e88d">"validate field types..."</div>
+          <div style="padding-left:12px"><span style="color:var(--cyan)">return</span> ValidationResult</div>
+        </div>
+      </div>
+      <div class="output-tag">5 Python Validators · All Confidence 1.00</div>
+    </div>
+    <div class="step-card fade-in">
+      <div class="step-number">Step 06</div>
+      <div class="step-icon" style="background:rgba(255,71,87,0.1)">✏️</div>
+      <div class="step-title">Control Center — Natural Language Rules</div>
+      <div class="step-desc">Type rules in plain English — "column should not contain any special characters" — the AI generates corresponding Python validation modules instantly and logs everything to the audit trail.</div>
+      <div class="step-screen">
+        <div class="screen-topbar"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+        <div style="background:var(--dark);border:1px solid var(--border);border-radius:5px;padding:9px;font-size:10px;color:var(--muted);margin-bottom:8px;font-family:'DM Mono',monospace">column should not be negative...</div>
+        <div style="height:22px;border-radius:4px;background:rgba(30,111,255,0.2);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--blue)">▶ Generate DQ Rule</div>
+      </div>
+      <div class="output-tag">3 New Python Functions Generated</div>
+    </div>
+    <div class="step-card fade-in">
+      <div class="step-number">Step 07</div>
+      <div class="step-icon" style="background:rgba(0,229,160,0.1)">🧪</div>
+      <div class="step-title">Playground — Interactive Testing</div>
+      <div class="step-desc">Upload a CSV, select schema and columns, execute any validation rule instantly. Per-column pass/fail scorecards, searchable Failed/Passed Records explorers with full row data — paginated 50 records/page.</div>
+      <div class="step-screen">
+        <div class="screen-topbar"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+        <div class="screen-table">
+          <div class="sc" style="font-size:8px;display:flex;align-items:center;justify-content:center;color:var(--muted)">Col</div><div class="sc" style="font-size:8px;display:flex;align-items:center;justify-content:center;color:var(--muted)">Total</div><div class="sc" style="font-size:8px;display:flex;align-items:center;justify-content:center;color:var(--muted)">Pass</div><div class="sc" style="font-size:8px;display:flex;align-items:center;justify-content:center;color:var(--muted)">Rate</div>
+          <div class="sc"></div><div class="sc"></div><div class="sc g"></div><div class="sc g"></div>
+          <div class="sc"></div><div class="sc"></div><div class="sc g"></div><div class="sc g"></div>
+          <div class="sc"></div><div class="sc"></div><div class="sc g"></div><div class="sc g"></div>
+        </div>
+      </div>
+      <div class="output-tag">Column-Level Pass / Fail · 100% Pass Rate Demo</div>
+    </div>
+    <div class="step-card fade-in">
+      <div class="step-number">Step 08</div>
+      <div class="step-icon" style="background:rgba(30,111,255,0.12)">▶️</div>
+      <div class="step-title">Control Center — Execute Full Pipeline</div>
+      <div class="step-desc">Orchestrate full DQ validation across every column and table. Bulk-add rows using "All Columns" in one click — 52 rows from one selection. Execute triggers all checks with real-time progress bar.</div>
+      <div class="step-screen">
+        <div style="background:rgba(30,111,255,0.1);border-radius:4px;padding:6px 10px;font-size:10px;color:var(--blue);margin-bottom:8px;text-align:center">Execute · 296 Checks Running...</div>
+        <div style="display:flex;gap:8px;justify-content:space-around">
+          <div style="text-align:center"><div style="font-size:16px;font-weight:800;color:var(--text)">296</div><div style="font-size:9px;color:var(--muted)">Total</div></div>
+          <div style="text-align:center"><div style="font-size:16px;font-weight:800;color:var(--green)">212</div><div style="font-size:9px;color:var(--muted)">Passed</div></div>
+          <div style="text-align:center"><div style="font-size:16px;font-weight:800;color:var(--red)">71</div><div style="font-size:9px;color:var(--muted)">Failed</div></div>
+          <div style="text-align:center"><div style="font-size:16px;font-weight:800;color:var(--muted)">0</div><div style="font-size:9px;color:var(--muted)">Errors</div></div>
+        </div>
+      </div>
+      <div class="output-tag">Quick Summary: 296 Checks · 212 Passed · 71 Failed</div>
+    </div>
+    <div class="step-card fade-in">
+      <div class="step-number">Step 09</div>
+      <div class="step-icon" style="background:rgba(245,185,66,0.12)">📈</div>
+      <div class="step-title">Execution Results — Full Analysis</div>
+      <div class="step-desc">Rich visual breakdown: donut chart, Top Failed Rules bar chart, Rule-wise Breakdown table, per-rule record-level drilldown with Failures by Column chart. Export as CSV or JSON for remediation.</div>
+      <div class="step-screen">
+        <div class="screen-topbar"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+        <div class="screen-table" style="grid-template-columns:repeat(5,1fr)">
+          <div class="sc b"></div><div class="sc"></div><div class="sc"></div><div class="sc r"></div><div class="sc"></div>
+          <div class="sc b"></div><div class="sc"></div><div class="sc"></div><div class="sc r"></div><div class="sc"></div>
+          <div class="sc b"></div><div class="sc"></div><div class="sc"></div><div class="sc r"></div><div class="sc"></div>
+          <div class="sc b"></div><div class="sc"></div><div class="sc"></div><div class="sc g"></div><div class="sc"></div>
+          <div class="sc b"></div><div class="sc"></div><div class="sc"></div><div class="sc g"></div><div class="sc"></div>
+        </div>
+      </div>
+      <div class="output-tag">Audit-Ready CSV & JSON Reports</div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="features-inner">
+    <div class="section-header fade-in">
+      <div class="section-tag">Platform Capabilities</div>
+      <h2 class="section-title">Built for <em>Enterprise</em> Data Quality</h2>
+    </div>
+    <div class="features-grid fade-in">
+      <div class="feat-card"><span class="feat-icon">🤖</span><div class="feat-title">Generative AI Rule Engine</div><div class="feat-desc">Write rules in plain English. The AI generates production Python validation modules instantly with auto-calculated confidence scores.</div></div>
+      <div class="feat-card"><span class="feat-icon">🗺️</span><div class="feat-title">3-Layer Schema Mapping</div><div class="feat-desc">Fuzzy matching + Embedding similarity + LLM reasoning combine to deliver near-perfect column mapping with configurable confidence thresholds.</div></div>
+      <div class="feat-card"><span class="feat-icon">📋</span><div class="feat-title">Full Audit Trail</div><div class="feat-desc">Every rule change, pipeline execution, and user action is logged with timestamps, natural language queries, and generated function names.</div></div>
+      <div class="feat-card"><span class="feat-icon">⚡</span><div class="feat-title">Bulk Rule Configuration</div><div class="feat-desc">Apply a check type to all columns in one click — 52 validation rows created simultaneously with parameters auto-populated from the schema.</div></div>
+      <div class="feat-card"><span class="feat-icon">🧪</span><div class="feat-title">Interactive Playground</div><div class="feat-desc">Test any rule against real data before deployment. Per-column scorecards, searchable record explorer, and instant pass/fail feedback.</div></div>
+      <div class="feat-card"><span class="feat-icon">📤</span><div class="feat-title">Flexible Export Options</div><div class="feat-desc">Export failed records as CSV for business analysts or complete structured results as JSON for programmatic integration with governance platforms.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- MAPPING DEEP DIVE -->
+<section id="mapping">
+  <div class="section-header fade-in">
+    <div class="section-tag">AI Schema Mapping</div>
+    <h2 class="section-title">Multi-Layer <em>Intelligence</em></h2>
+    <p class="section-desc">Three complementary AI techniques combine to achieve near-perfect column mapping accuracy.</p>
+  </div>
+  <div class="mapping-layout fade-in">
+    <div class="mapping-visual">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:18px;letter-spacing:0.06em">LAYER WEIGHTS</div>
+      <div class="layer-row"><span class="layer-name">🔤 Fuzzy Matching</span><div class="layer-bar-wrap"><div class="layer-bar" style="width:20%;background:linear-gradient(90deg,var(--blue),rgba(30,111,255,0.5))"></div></div><span class="layer-val">0.20</span></div>
+      <div class="layer-row"><span class="layer-name">📐 Embedding Similarity</span><div class="layer-bar-wrap"><div class="layer-bar" style="width:30%;background:linear-gradient(90deg,var(--cyan),rgba(0,212,255,0.5))"></div></div><span class="layer-val">0.30</span></div>
+      <div class="layer-row"><span class="layer-name">🧠 LLM Reasoning</span><div class="layer-bar-wrap"><div class="layer-bar" style="width:50%;background:linear-gradient(90deg,var(--gold),rgba(245,185,66,0.5))"></div></div><span class="layer-val">0.50</span></div>
+      <div style="margin-top:24px;font-size:12px;color:var(--muted);margin-bottom:14px;letter-spacing:0.06em">CONFIDENCE THRESHOLDS</div>
+      <div class="layer-row"><span class="layer-name">✅ Auto-Approve</span><div class="layer-bar-wrap"><div class="layer-bar" style="width:75%;background:linear-gradient(90deg,var(--green),rgba(0,229,160,0.4))"></div></div><span class="layer-val">0.75</span></div>
+      <div class="layer-row"><span class="layer-name">👁 Needs Review</span><div class="layer-bar-wrap"><div class="layer-bar" style="width:50%;background:linear-gradient(90deg,var(--gold),rgba(245,185,66,0.4))"></div></div><span class="layer-val">0.50</span></div>
+      <div class="confidence-badge">✓ txn_cfg.json: 39/40 columns · Confidence 1.00</div>
+    </div>
+    <div class="mapping-content">
+      <h3>From Raw Columns to Perfect Schema Alignment</h3>
+      <p>The Schema Mapping engine processes each schema-dataset pair with a sequential AI pipeline, combining three independent scoring signals into a unified confidence score for every column match.</p>
+      <ul class="check-list">
+        <li>String similarity via fuzzy matching handles straightforward exact-match columns like <em>transaction_date</em></li>
+        <li>Semantic vector embeddings capture conceptual similarity between differently-named but equivalent fields</li>
+        <li>LLM contextual reasoning understands business domain nuance — abbreviations, acronyms, alias naming</li>
+        <li>Mappings above 0.75 auto-approved instantly; between 0.50–0.75 flagged for human review</li>
+        <li>Unmapped columns clearly identified — e.g., <em>tpm_id</em> — full transparency, no hidden failures</li>
+        <li>position_cfg.json: all 23 columns mapped with confidence 1.00 — zero unmapped</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- RULE HUB -->
+<section id="rulehub">
+  <div class="rulehub-inner">
+    <div class="section-header fade-in">
+      <div class="section-tag">Rule Hub</div>
+      <h2 class="section-title">Generated <em>Python</em> Validators</h2>
+      <p class="section-desc">Five production-ready validation modules auto-generated from your DQ rules — each with Confidence 1.00.</p>
+    </div>
+    <div class="modules-grid fade-in">
+      <div class="module-card"><div class="module-confidence">1.00 ✓</div><div class="module-icon">📏</div><div class="module-name">check_data_length</div><div class="module-desc">Validates string field lengths fall within defined min/max bounds from the schema mapping document.</div></div>
+      <div class="module-card"><div class="module-confidence">1.00 ✓</div><div class="module-icon">🔍</div><div class="module-name">check_data_type</div><div class="module-desc">Verifies field values match expected data types (string, number, boolean, date) defined in the schema.</div></div>
+      <div class="module-card"><div class="module-confidence">1.00 ✓</div><div class="module-icon">🚫</div><div class="module-name">check_not_null</div><div class="module-desc">Identifies null values in fields designated as non-nullable per the IDM Data Model definition.</div></div>
+      <div class="module-card"><div class="module-confidence">1.00 ✓</div><div class="module-icon">📊</div><div class="module-name">check_null_volume_variance</div><div class="module-desc">Tracks and flags variance in null volume for nullable fields — detects unexpected data completeness changes.</div></div>
+      <div class="module-card"><div class="module-confidence">1.00 ✓</div><div class="module-icon">🏗️</div><div class="module-name">check_schema</div><div class="module-desc">Ensures the dataset schema matches the expected column structure — validates column names, count, and presence.</div></div>
+    </div>
+    <div class="code-block fade-in">
+      <div class="code-topbar"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+      <pre><span class="kw">def</span> <span class="fn">check_data_length</span>(
+    df: <span class="cls">DataFrame</span>,
+    field_names: <span class="cls">List</span>[<span class="cls">str</span>],
+    parameters: <span class="cls">Dict</span>[<span class="cls">str</span>, <span class="cls">Any</span>],
+    rule_id: <span class="cls">str</span> = <span class="str">"SCHEMA"</span>,
+    record_id_col: <span class="cls">str</span> = <span class="str">"tpm_id"</span>
+) -> <span class="cls">ValidationResult</span>:
+    <span class="str">"""Validates that string field lengths are within defined min/max bounds."""</span>
+    <span class="cm"># Resolve field names from schema mapping</span>
+    resolved = resolve_columns(df, field_names)
+    failed_ids = <span class="fn">set</span>()
+
+    <span class="kw">for</span> col <span class="kw">in</span> resolved:
+        min_length = parameters.<span class="fn">get</span>(<span class="str">"minLength"</span>, <span class="num">0</span>)
+        max_length = parameters.<span class="fn">get</span>(<span class="str">"maxLength"</span>, <span class="num">255</span>)
+        invalid_df = too_short_df.<span class="fn">union</span>(too_long_df)
+        <span class="kw">if</span> invalid_df.<span class="fn">count</span>() > <span class="num">0</span>:
+            col_failed_ids = get_failed_ids(invalid_df, record_id_col)
+            error_details.<span class="fn">append</span>({<span class="str">"field"</span>: col, <span class="str">"error"</span>: <span class="str">"Length out of bounds"</span>})
+
+    <span class="kw">return</span> <span class="cls">ValidationResult</span>(
+        check_type=check_type, rule_id=rule_id,
+        total_records=total, passed_records=total - <span class="fn">len</span>(failed_ids),
+        failed_records=<span class="fn">len</span>(failed_ids), error_details=error_details
+    )</pre>
+    </div>
+  </div>
+</section>
+
+<!-- RESULTS -->
+<section id="results">
+  <div class="section-header fade-in">
+    <div class="section-tag">Execution Results</div>
+    <h2 class="section-title">Data Quality <em>Insights</em></h2>
+    <p class="section-desc">Comprehensive visual analysis of every validation run with drilldown to individual records.</p>
+  </div>
+  <div class="results-layout fade-in">
+    <div>
+      <div class="summary-cards">
+        <div class="sum-card"><div class="sum-num" style="color:var(--cyan)">1,050</div><div class="sum-label">Total Records</div></div>
+        <div class="sum-card"><div class="sum-num" style="color:var(--text)">296</div><div class="sum-label">Total Checks</div></div>
+        <div class="sum-card"><div class="sum-num" style="color:var(--green)">212</div><div class="sum-label">Passed</div></div>
+        <div class="sum-card"><div class="sum-num" style="color:var(--red)">71</div><div class="sum-label">Failed</div></div>
+      </div>
+      <div class="rule-table">
+        <div class="rule-table-header"><span>Rule</span><span>Check Type</span><span>Pass Rate</span><span>Status</span></div>
+        <div class="rule-row"><span style="color:var(--muted)">Rule 1</span><span>Data Type</span><span style="color:var(--red)">11.4%</span><span><div class="status-badge status-fail">FAIL</div></span></div>
+        <div class="rule-row"><span style="color:var(--muted)">Rule 2</span><span>Data Length</span><span style="color:var(--red)">22.1%</span><span><div class="status-badge status-fail">FAIL</div></span></div>
+        <div class="rule-row"><span style="color:var(--muted)">Rule 3</span><span>Null Check</span><span style="color:var(--gold)">51.3%</span><span><div class="status-badge status-fail">FAIL</div></span></div>
+        <div class="rule-row"><span style="color:var(--muted)">Rule 4</span><span>Null Variance</span><span style="color:var(--green)">100.0%</span><span><div class="status-badge status-pass">PASS</div></span></div>
+        <div class="rule-row"><span style="color:var(--muted)">Rule 5</span><span>Schema Check</span><span style="color:var(--green)">100.0%</span><span><div class="status-badge status-pass">PASS</div></span></div>
+      </div>
+    </div>
+    <div class="donut-wrap">
+      <div class="donut-title">Overall Data Quality Status</div>
+      <svg width="190" height="190" viewBox="0 0 200 200">
+        <circle cx="100" cy="100" r="70" fill="none" stroke="#1a2a3a" stroke-width="26"/>
+        <circle cx="100" cy="100" r="70" fill="none" stroke="#ff4757" stroke-width="26" stroke-dasharray="428 10" stroke-dashoffset="157" stroke-linecap="round"/>
+        <circle cx="100" cy="100" r="70" fill="none" stroke="#00e5a0" stroke-width="26" stroke-dasharray="7 431" stroke-dashoffset="-271" stroke-linecap="round"/>
+        <text x="100" y="93" text-anchor="middle" fill="#e8f0ff" font-family="Syne,sans-serif" font-size="24" font-weight="800">1,050</text>
+        <text x="100" y="112" text-anchor="middle" fill="#7b9cc4" font-family="DM Mono,monospace" font-size="10">Total Records</text>
+      </svg>
+      <div class="donut-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Failed (99%)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Passed (1%)</div>
+      </div>
+      <div style="margin-top:20px;padding:16px;background:var(--dark);border-radius:10px;width:100%">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px;letter-spacing:0.08em">TOP FAILED RULES</div>
+        <div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>Rule 1</span><span style="color:var(--red)">930</span></div><div style="height:4px;background:rgba(255,71,87,0.15);border-radius:2px"><div style="width:100%;height:100%;background:var(--red);border-radius:2px"></div></div></div>
+        <div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>Rule 2</span><span style="color:var(--red)">818</span></div><div style="height:4px;background:rgba(255,71,87,0.15);border-radius:2px"><div style="width:88%;height:100%;background:var(--red);opacity:0.7;border-radius:2px"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>Rule 3</span><span style="color:var(--gold)">511</span></div><div style="height:4px;background:rgba(245,185,66,0.15);border-radius:2px"><div style="width:55%;height:100%;background:var(--gold);border-radius:2px"></div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- VIDEO TUTORIAL -->
+<section id="video">
+  <div class="video-inner">
+    <div class="section-header fade-in">
+      <div class="section-tag">Video Tutorial</div>
+      <h2 class="section-title">See RAMGE <em>in Action</em></h2>
+      <p class="section-desc">Embed your product demo video below — supports YouTube, Vimeo, or any direct URL.</p>
+    </div>
+    <div class="video-main fade-in">
+      <div class="video-embed-area" id="videoArea">
+        <div class="video-placeholder" id="videoPlaceholder">
+          <button class="play-btn" onclick="document.getElementById('embedInput').focus();document.getElementById('videoUploadBox').scrollIntoView({behavior:'smooth'})">▶</button>
+          <h3 style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700">RAMGE Platform Walkthrough</h3>
+          <p style="color:var(--muted);font-size:13px;margin-top:8px">Complete end-to-end demo · 9 steps · All features</p>
+          <p style="color:rgba(123,156,196,0.5);font-size:11px;margin-top:12px">↓ Paste your video URL in the field below</p>
+        </div>
+        <iframe id="videoIframe" src="" allowfullscreen style="display:none;position:absolute;top:0;left:0;width:100%;height:100%;border:none"></iframe>
+      </div>
+      <div class="video-info">
+        <div class="video-meta">
+          <h4>RAMGE — Full Platform Demo</h4>
+          <p>Dashboard · File Upload · Schema Mapping · Rule Transformation · Rule Hub · Control Center · Playground · Execution Results</p>
+        </div>
+        <div class="video-duration">Full Walkthrough</div>
+      </div>
+    </div>
+    <div class="video-upload-box fade-in" id="videoUploadBox">
+      <span class="upload-icon">🎬</span>
+      <h4>Embed Your Tutorial Video</h4>
+      <p>Paste a YouTube, Vimeo, or direct MP4/video URL to embed your product demo instantly</p>
+      <div class="video-url-form" onclick="event.stopPropagation()">
+        <input type="text" class="video-url-input" id="embedInput" placeholder="https://youtube.com/watch?v=... or Vimeo URL">
+        <button class="embed-btn" onclick="embedVideo()">▶ Embed</button>
+      </div>
+    </div>
+    <div style="margin-top:44px">
+      <div style="font-family:'Syne',sans-serif;font-size:17px;font-weight:700;margin-bottom:18px">Tutorial Chapters</div>
+      <div class="chapters-grid fade-in">
+        <div class="chapter-card"><div class="chapter-num">01</div><div class="chapter-info"><h5>Dashboard Overview</h5><p>Metrics, history & audit logs</p></div></div>
+        <div class="chapter-card"><div class="chapter-num">02</div><div class="chapter-info"><h5>File Upload</h5><p>Rules workbook & datasets</p></div></div>
+        <div class="chapter-card"><div class="chapter-num">03</div><div class="chapter-info"><h5>Schema Mapping</h5><p>AI-powered column matching</p></div></div>
+        <div class="chapter-card"><div class="chapter-num">04</div><div class="chapter-info"><h5>Rule Transformation</h5><p>Extract structured rules</p></div></div>
+        <div class="chapter-card"><div class="chapter-num">05</div><div class="chapter-info"><h5>Rule Hub</h5><p>Python validation modules</p></div></div>
+        <div class="chapter-card"><div class="chapter-num">06</div><div class="chapter-info"><h5>Control Center</h5><p>Natural language rule gen</p></div></div>
+        <div class="chapter-card"><div class="chapter-num">07</div><div class="chapter-info"><h5>Playground</h5><p>Test & validate rules live</p></div></div>
+        <div class="chapter-card"><div class="chapter-num">08</div><div class="chapter-info"><h5>Execute Pipeline</h5><p>Full validation run & summary</p></div></div>
+        <div class="chapter-card"><div class="chapter-num">09</div><div class="chapter-info"><h5>Execution Results</h5><p>Charts, drilldown & export</p></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DEMO GUIDE -->
+<section id="demo">
+  <div class="section-header fade-in">
+    <div class="section-tag">Client Demo Guide</div>
+    <h2 class="section-title">How to <em>Impress</em> Your Client</h2>
+    <p class="section-desc">A proven framework for presenting RAMGE in a compelling, memorable, and informative way.</p>
+  </div>
+  <div class="tips-grid fade-in">
+    <div class="tip-card"><div class="tip-num">01</div><h4>Start with the Problem</h4><p>Open with a real data quality pain point, then show how RAMGE solves it in under 5 minutes.</p><ul><li>Ask: "How long does it take your team to detect a null value issue in production today?"</li><li>Show the Dashboard — reveal the audit trail already exists</li><li>Contrast manual effort vs. automated detection in RAMGE</li></ul></div>
+    <div class="tip-card"><div class="tip-num">02</div><h4>Live Upload = Instant WOW</h4><p>Upload a real Excel rules workbook and watch the platform parse it live — the most powerful first impression.</p><ul><li>Pre-prepare a 5–10 rule workbook relevant to client's domain</li><li>Upload it — show the instant Excel Preview with parsed rules</li><li>Let the client see their OWN rules appear in the system</li></ul></div>
+    <div class="tip-card"><div class="tip-num">03</div><h4>Let AI Do the Magic</h4><p>The Schema Mapping step is the demo's centerpiece. Show 39 of 40 columns mapped automatically with confidence 1.00.</p><ul><li>Explain the 3-layer approach: "Fuzzy + Embedding + LLM working together"</li><li>Show the confidence sliders — "you control how strict the AI is"</li><li>Reveal the 1 unmapped column — shows transparency, not hidden failures</li></ul></div>
+    <div class="tip-card"><div class="tip-num">04</div><h4>Natural Language Demo</h4><p>Type a rule in plain English during the demo. Generating Python code live is unforgettable.</p><ul><li>Ask the client: "Tell me a rule for your data" — type it verbatim</li><li>Hit Generate — show the Python function appear in seconds</li><li>Open Playground immediately and test it on their actual data</li></ul></div>
+    <div class="tip-card"><div class="tip-num">05</div><h4>Show the Failure — Not Just Success</h4><p>Don't hide failed checks. The failure analysis is what clients pay for.</p><ul><li>Run Execute — let the 296 checks run live with the progress bar</li><li>Expand Rule 1 failures — show the exact rows and columns that failed</li><li>Download CSV export — "your team can fix these tomorrow morning"</li></ul></div>
+    <div class="tip-card"><div class="tip-num">06</div><h4>Leave With a Report</h4><p>End every demo by handing the client something tangible — their own data quality report.</p><ul><li>Export "All Failed Records (CSV)" with their data in hand</li><li>Export "Validation Results (JSON)" for their engineering team</li><li>Closing line: "Everything you just saw — you can have this running daily, automatically."</li></ul></div>
+  </div>
+  <div class="script-box fade-in">
+    <h3>🎯 Suggested Demo Script <span style="font-size:13px;color:var(--muted);font-weight:400;font-family:'DM Mono',monospace">(30-minute session)</span></h3>
+    <div class="script-step">
+      <div class="script-marker">0</div>
+      <div class="script-content"><h5>Opening Hook (2 min)</h5><p>"Today I'm going to show you how your team can go from a raw data file to a complete data quality audit report — in under 10 minutes — using AI. No code, no SQL, no waiting for engineers."</p></div>
+    </div>
+    <div class="script-step">
+      <div class="script-marker">1</div>
+      <div class="script-content"><h5>Dashboard (3 min)</h5><p>"This is your command center. Every pipeline run, every rule change, every user — all logged automatically. Your compliance team will love the full audit trail at the bottom."</p></div>
+    </div>
+    <div class="script-step">
+      <div class="script-marker">2</div>
+      <div class="script-content"><h5>Upload + Schema Mapping (7 min)</h5><p>"I'm uploading your rules workbook now... [Upload] The system just read all your rules. Now let me map your dataset — [Run Mapping] — 39 of 40 columns matched automatically, confidence 1.00. This used to take your team days."</p></div>
+    </div>
+    <div class="script-step">
+      <div class="script-marker">3</div>
+      <div class="script-content"><h5>Natural Language Rule + Playground (8 min)</h5><p>"Tell me one rule your team enforces manually today. [Client answers.] Perfect — I'll type that in exactly as you said it. [Generate DQ Rule.] The AI just wrote a Python validator for that rule. Let me test it on your data right now... [Playground results.] Done in 30 seconds."</p></div>
+    </div>
+    <div class="script-step">
+      <div class="script-marker">4</div>
+      <div class="script-content"><h5>Execute + Results (8 min)</h5><p>"Now I'll run the full pipeline across all 296 checks. [Execute.] While this runs — this is what your team would receive every morning, automatically. [Results.] Rule 1 shows 930 failures. Let me show you exactly which records — [Expand] — there's the data. And here's your CSV report ready to send to the data team."</p></div>
+    </div>
+    <div class="script-step">
+      <div class="script-marker">5</div>
+      <div class="script-content"><h5>Close + Next Steps (2 min)</h5><p>"What you just saw took under 10 minutes. Your team runs this daily — automatically. Every failure is logged, every rule is auditable, every output is exportable. What questions do you have about applying this to your specific data environment?"</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="font-size:22px;margin-bottom:12px">
+    <span style="background:linear-gradient(135deg,var(--blue),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-family:'Syne',sans-serif;font-weight:800">RAMGE</span>
+  </div>
+  <strong>Rules Authentication and Module Generation Engine</strong><br>
+  <span>TPM Data Quality Engine · Validation & Rule Management Platform · Version 1.0</span><br><br>
+  <span style="color:rgba(123,156,196,0.4);font-size:11px">Built for enterprise data quality at scale — powered by AI, built for analysts.</span>
+</footer>
+
+<script>
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+function embedVideo() {
+  const input = document.getElementById('embedInput').value.trim();
+  if (!input) return;
+  const area = document.getElementById('videoArea');
+  const placeholder = document.getElementById('videoPlaceholder');
+  const iframe = document.getElementById('videoIframe');
+  let embedUrl = input;
+  const yt = input.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
+  if (yt) embedUrl = 'https://www.youtube.com/embed/' + yt[1] + '?autoplay=1';
+  const vm = input.match(/vimeo\.com\/(\d+)/);
+  if (vm) embedUrl = 'https://player.vimeo.com/video/' + vm[1] + '?autoplay=1';
+  iframe.src = embedUrl;
+  iframe.style.display = 'block';
+  placeholder.style.display = 'none';
+  document.getElementById('video').scrollIntoView({ behavior: 'smooth' });
+}
+document.getElementById('embedInput').addEventListener('keydown', e => { if (e.key === 'Enter') embedVideo(); });
+</script>
+</body>
+</html>
